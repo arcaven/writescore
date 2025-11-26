@@ -177,8 +177,9 @@ class FigurativeLanguageDimension(DimensionStrategy):
         # Self-register with registry (AC: 6)
         DimensionRegistry.register(self)
 
-        # Ensure NLTK WordNet is available (auto-download if needed)
+        # Ensure NLTK resources are available (auto-download if needed)
         # Following NLTK 3.9.2 best practices
+        self._setup_punkt()
         self._setup_wordnet()
 
         # Load sentence transformer model for embedding-based metaphor detection
@@ -210,6 +211,32 @@ class FigurativeLanguageDimension(DimensionStrategy):
     # ========================================================================
     # INITIALIZATION HELPERS
     # ========================================================================
+
+    def _setup_punkt(self) -> None:
+        """
+        Ensure NLTK punkt tokenizer data is available, downloading if necessary.
+
+        Required for sent_tokenize() and word_tokenize() functions.
+        Following NLTK 3.9.2 best practices for resource management.
+
+        Downloads:
+        - punkt_tab: Punkt tokenizer models (~35MB)
+
+        Raises:
+            No exceptions - prints warnings and continues if downloads fail.
+        """
+        try:
+            # Test if punkt_tab is accessible by tokenizing a test sentence
+            sent_tokenize("Test sentence.")
+        except LookupError:
+            # punkt_tab not found - download it
+            print("Downloading NLTK punkt tokenizer data (first run only)...", file=sys.stderr)
+            try:
+                nltk.download('punkt_tab', quiet=True)
+                print("✓ Punkt tokenizer setup complete", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Failed to download punkt_tab: {e}", file=sys.stderr)
+                print("Tokenization may fail without punkt_tab", file=sys.stderr)
 
     def _setup_wordnet(self) -> None:
         """
