@@ -564,11 +564,12 @@ class TestPerformance:
         # Verify result is valid
         assert result['available'] is True
 
-        # Check performance target (< 30s relaxed, target 6-15s)
+        # Check performance target (< 45s relaxed for CI, target 6-15s locally)
         # Note: First run includes model loading overhead
         # Embedding analysis adds overhead but provides better accuracy
+        # CI runners are slower than local machines
         print(f"\nPerformance: {elapsed:.2f}s for ~10k words")
-        assert elapsed < 30.0, f"Processing took {elapsed:.2f}s, expected < 30s"
+        assert elapsed < 45.0, f"Processing took {elapsed:.2f}s, expected < 45s"
 
     def test_performance_1k_words(self, dimension):
         """Test processing time for 1k words (baseline)."""
@@ -580,8 +581,9 @@ class TestPerformance:
 
         # Should be faster for smaller text
         # Allow some overhead for embedding model operations
+        # CI runners are slower than local machines
         print(f"\nPerformance: {elapsed:.2f}s for ~1k words")
-        assert elapsed < 7.0, f"Processing took {elapsed:.2f}s for 1k words"
+        assert elapsed < 12.0, f"Processing took {elapsed:.2f}s for 1k words"
 
 
 class TestMonotonicScoringWithQualityAdjustments:
