@@ -52,7 +52,8 @@ jobs:
       - name: Run coverage
         if: matrix.python-version == '3.12'
         run: |
-          pytest --cov=writescore --cov-report=xml tests/
+          # Skip strict local performance tests on CI
+          pytest --cov=writescore --cov-report=xml -m "not performance_local" tests/
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'

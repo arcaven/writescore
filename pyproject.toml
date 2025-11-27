@@ -79,6 +79,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
     "accuracy: marks accuracy validation tests",
+    "performance_local: marks strict performance tests that should only run locally (skipped on CI)",
 ]
 timeout = 300
 

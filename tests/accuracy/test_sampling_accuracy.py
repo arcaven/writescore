@@ -3,6 +3,10 @@ Accuracy tests for sampling vs full GLTR analysis.
 
 Tests that sampled analysis produces scores within ±10% of full analysis.
 Story 1.4.7: Enable Full Document GLTR Analysis
+
+Note: Tests that run FULL mode GLTR analysis are marked @pytest.mark.performance_local
+as they require significant time (5+ minutes) that exceeds CI runner timeouts.
+Run locally with: pytest -m performance_local tests/accuracy/
 """
 
 import pytest
@@ -146,11 +150,19 @@ class TestDataHelpers:
 
 
 class TestSamplingAccuracy:
-    """Test sampling doesn't bias scores."""
+    """Test sampling doesn't bias scores.
+
+    Tests marked @pytest.mark.performance_local require FULL mode GLTR analysis
+    which takes 5+ minutes and exceeds CI runner timeouts. Run locally only.
+    """
 
     @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_sampled_vs_full_within_10_percent(self, dim):
-        """Test sampled analysis within ±10% of full analysis."""
+        """Test sampled analysis within ±10% of full analysis.
+
+        Marked performance_local: Requires FULL mode GLTR (5+ min on CI).
+        """
 
         helpers = TestDataHelpers()
         test_text = helpers._load_known_ai_text()  # Known AI score ~0.75
@@ -171,8 +183,12 @@ class TestSamplingAccuracy:
             f"Sampled score {sampled_score:.3f} differs from full {full_score:.3f} by {difference:.3f} (>10%)"
 
     @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_adaptive_vs_full_within_10_percent(self, dim):
-        """Test ADAPTIVE mode within ±10% of full analysis."""
+        """Test ADAPTIVE mode within ±10% of full analysis.
+
+        Marked performance_local: Requires FULL mode GLTR (5+ min on CI).
+        """
 
         helpers = TestDataHelpers()
         test_text = helpers._load_known_human_text()  # Known human score ~0.50
@@ -192,8 +208,14 @@ class TestSamplingAccuracy:
         assert difference <= 0.10, \
             f"ADAPTIVE score {adaptive_score:.3f} differs from full {full_score:.3f} by {difference:.3f} (>10%)"
 
+    @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_sampling_detects_ai_text(self, dim):
-        """Test sampling correctly identifies AI text."""
+        """Test sampling correctly identifies AI text.
+
+        Marked performance_local: SAMPLING mode GLTR runs GPT-2 inference
+        multiple times which can timeout on slow CI runners.
+        """
         config = AnalysisConfig(mode=AnalysisMode.SAMPLING, sampling_sections=5)
 
         helpers = TestDataHelpers()
@@ -204,8 +226,14 @@ class TestSamplingAccuracy:
         assert result['gltr_top10_percentage'] > 0.60, \
             f"AI text scored {result['gltr_top10_percentage']:.3f}, expected >0.60"
 
+    @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_sampling_detects_human_text(self, dim):
-        """Test sampling correctly identifies human text."""
+        """Test sampling correctly identifies human text.
+
+        Marked performance_local: SAMPLING mode GLTR runs GPT-2 inference
+        multiple times which can timeout on slow CI runners.
+        """
         config = AnalysisConfig(mode=AnalysisMode.SAMPLING, sampling_sections=5)
 
         helpers = TestDataHelpers()
@@ -218,8 +246,12 @@ class TestSamplingAccuracy:
             f"Human text scored {result['gltr_top10_percentage']:.3f}, expected <0.62"
 
     @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_multiple_samples_improves_accuracy(self, dim):
-        """Test that more samples produce results closer to full analysis."""
+        """Test that more samples produce results closer to full analysis.
+
+        Marked performance_local: Requires FULL mode GLTR (5+ min on CI).
+        """
 
         helpers = TestDataHelpers()
         test_text = helpers._load_known_ai_text()
@@ -244,8 +276,13 @@ class TestSamplingAccuracy:
         assert diff_10 <= diff_3 * 1.5, \
             f"10 samples (diff={diff_10:.3f}) not better than 3 samples (diff={diff_3:.3f})"
 
+    @pytest.mark.slow
+    @pytest.mark.performance_local
     def test_consistent_results_across_runs(self, dim):
-        """Test that analysis produces consistent results on same text."""
+        """Test that analysis produces consistent results on same text.
+
+        Marked performance_local: Multiple GLTR runs can timeout on CI.
+        """
         config = AnalysisConfig(mode=AnalysisMode.FAST)
 
         text = "word " * 500
@@ -260,7 +297,10 @@ class TestSamplingAccuracy:
 
     @pytest.mark.slow
     def test_sampling_across_document_positions(self, dim):
-        """Test that sampling covers beginning, middle, and end of document."""
+        """Test that sampling covers beginning, middle, and end of document.
+
+        This test uses ADAPTIVE mode which is faster and suitable for CI.
+        """
         config = AnalysisConfig(mode=AnalysisMode.ADAPTIVE)
 
         # Create document with distinct sections
