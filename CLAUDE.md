@@ -156,3 +156,12 @@ Optional extras:
 - `[dev]` - pytest, pytest-cov, ruff
 - `[semantic]` - sentence-transformers
 - `[ml]` - accelerate, datasets
+
+## Git Commit Guidelines
+
+When creating git commits, do NOT include:
+- The "Generated with Claude Code" line
+- The "Co-Authored-By: Claude" line
+- Any other AI attribution in commit messages
+
+Keep commit messages clean and focused on the changes being made.
