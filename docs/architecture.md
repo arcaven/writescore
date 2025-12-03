@@ -1,8 +1,8 @@
 # WriteScore Architecture Document
 
-**Version:** 1.0
-**Status:** Baseline (Reverse-Engineered from Existing Codebase)
-**Last Updated:** 2025-11-26
+**Version:** 1.1
+**Status:** Active
+**Last Updated:** 2025-12-02
 **Product Version:** 6.3.0
 
 ---
@@ -11,6 +11,7 @@
 
 | Change | Date | Version | Description | Author |
 |--------|------|---------|-------------|--------|
+| Enhanced with codebase analysis | 2025-12-02 | 1.1 | Added data flow, exception hierarchy, detailed component interfaces | SM Agent |
 | Initial Architecture | 2025-11-26 | 1.0 | Reverse-engineered architecture from codebase v6.3.0 | Architect Agent |
 
 ---
@@ -254,30 +255,194 @@ graph TB
 
 ### 3.4 Dimension Inventory
 
-| Dimension | Tier | Purpose |
-|-----------|------|---------|
-| `perplexity` | CORE | AI vocabulary detection |
-| `burstiness` | CORE | Sentence variation |
-| `formatting` | CORE | Em-dash patterns |
-| `voice` | CORE | Authenticity markers |
-| `ai_vocabulary` | CORE | AI word patterns |
-| `transition_marker` | CORE | Formulaic transitions |
-| `predictability` | ADVANCED | GLTR/n-gram analysis |
-| `semantic_coherence` | ADVANCED | Cross-sentence coherence |
-| `syntactic` | SUPPORTING | Dependency complexity |
-| `lexical` | SUPPORTING | Type-token ratio |
-| `advanced_lexical` | SUPPORTING | MTLD diversity |
-| `figurative_language` | SUPPORTING | Similes, metaphors |
-| `sentiment` | SUPPORTING | Emotional variance |
-| `readability` | SUPPORTING | Flesch-Kincaid |
-| `pragmatic_markers` | SUPPORTING | Discourse markers |
-| `structure` | STRUCTURAL | Heading hierarchy, lists |
+| Dimension | Tier | Weight | Purpose |
+|-----------|------|--------|---------|
+| `perplexity` | CORE | 12.0% | AI vocabulary detection |
+| `burstiness` | CORE | 5.5% | Sentence variation (GPTZero methodology) |
+| `formatting` | CORE | 8.0% | Em-dash patterns (strongest AI signal) |
+| `voice` | CORE | 6.0% | First-person, contractions, authenticity |
+| `ai_vocabulary` | CORE | 5.0% | AI-typical word patterns |
+| `transition_marker` | CORE | 4.0% | Formulaic transitions |
+| `predictability` | ADVANCED | 15.0% | GLTR/n-gram analysis (transformers) |
+| `semantic_coherence` | ADVANCED | 10.0% | Cross-sentence coherence (embeddings) |
+| `syntactic` | SUPPORTING | 5.0% | Dependency tree complexity |
+| `lexical` | SUPPORTING | 4.0% | Type-token ratio diversity |
+| `advanced_lexical` | SUPPORTING | 6.0% | MATTR, HDD, Yule's K |
+| `figurative_language` | SUPPORTING | 5.0% | Similes, metaphors, idioms |
+| `sentiment` | SUPPORTING | 4.0% | Emotional variance detection |
+| `readability` | SUPPORTING | 3.0% | Flesch-Kincaid, Gunning Fog |
+| `pragmatic_markers` | SUPPORTING | 3.5% | Discourse markers |
+| `structure` | STRUCTURAL | 4.0% | Heading hierarchy, lists |
+
+### 3.5 Dimension Self-Registration Pattern
+
+Each dimension follows this implementation pattern:
+
+```python
+class MyDimension(DimensionStrategy):
+    def __init__(self):
+        super().__init__()
+        DimensionRegistry.register(self)  # Self-registration
+
+    @property
+    def dimension_name(self) -> str:
+        return "my_dimension"
+
+    @property
+    def weight(self) -> float:
+        return 5.0  # Percentage of total score
+
+    @property
+    def tier(self) -> str:
+        return "CORE"  # ADVANCED, CORE, SUPPORTING, or STRUCTURAL
+
+    def analyze(self, text, lines=None, config=None, **kwargs):
+        # Use base class helper for mode-aware text preparation
+        prepared = self._prepare_text(text, config, self.dimension_name)
+        # Analyze and return metrics dict
+        return {'metric': value, 'available': True, ...}
+
+    def calculate_score(self, metrics):
+        # Return 0-100 where 100 = most human-like
+        score = ...
+        self._validate_score(score)
+        return score
+
+    def get_recommendations(self, score, metrics):
+        if score < 75:
+            return ["Specific actionable suggestion"]
+        return []
+
+# Module-level singleton triggers self-registration on import
+_instance = MyDimension()
+```
 
 ---
 
-## 4. Data Models
+## 4. Data Flow
 
-### 4.1 Core Data Models
+### 4.1 Analysis Pipeline
+
+```
+┌─────────────┐     ┌─────────────────┐     ┌──────────────────┐
+│  Input File │────▶│  Text Extraction │────▶│  Preprocessing   │
+│   (.md)     │     │  (marko parser)  │     │  (HTML comments) │
+└─────────────┘     └─────────────────┘     └──────────────────┘
+                                                      │
+                                                      ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │              DimensionLoader                     │
+                    │  Load dimensions based on profile               │
+                    │  (fast: 4, balanced: 8, full: 16)               │
+                    └─────────────────────────────────────────────────┘
+                                                      │
+                                                      ▼
+     ┌──────────────────────────────────────────────────────────────────┐
+     │                     Dimension Analysis Loop                       │
+     │  For each loaded dimension:                                       │
+     │  1. Prepare text based on mode (FAST/ADAPTIVE/SAMPLING/FULL)     │
+     │  2. Call dimension.analyze(prepared_text, config)                │
+     │  3. Store metrics in dimension_results dict                       │
+     └──────────────────────────────────────────────────────────────────┘
+                                                      │
+                                                      ▼
+     ┌──────────────────────────────────────────────────────────────────┐
+     │                      Score Calculation                            │
+     │  For each dimension:                                              │
+     │  1. Call dimension.calculate_score(metrics)                       │
+     │  2. Apply z-score normalization (if enabled)                      │
+     │  3. Weight by dimension.weight                                    │
+     │  4. Aggregate into tier categories                                │
+     │  5. Sum for Quality Score, invert for Detection Risk              │
+     └──────────────────────────────────────────────────────────────────┘
+                                                      │
+                                                      ▼
+     ┌──────────────────────────────────────────────────────────────────┐
+     │                    Report Generation                              │
+     │  • Format results based on --format option                        │
+     │  • Generate recommendations if --show-scores                      │
+     │  • Save to history if enabled                                     │
+     │  • Output to stdout or --output file                              │
+     └──────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Scoring Flow Detail
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                    DualScoreCalculator Flow                             │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  1. DISCOVER: DimensionRegistry.get_all()                              │
+│       │                                                                 │
+│       ▼                                                                 │
+│  2. VALIDATE: WeightMediator.is_valid()                                │
+│       │         (ensure weights sum to 100.0)                          │
+│       ▼                                                                 │
+│  3. SCORE: For each dimension                                          │
+│       │     • Extract metrics from results.dimension_results           │
+│       │     • Call dimension.calculate_score(metrics)                  │
+│       │     • Apply z-score normalization                              │
+│       │     • Weight: normalized_score = (score/100) * weight          │
+│       ▼                                                                 │
+│  4. CATEGORIZE: Group by tier                                          │
+│       │     • ADVANCED: 30-40% of total                                │
+│       │     • CORE: 35-45% of total                                    │
+│       │     • SUPPORTING: 15-25% of total                              │
+│       │     • STRUCTURAL: 5-10% of total                               │
+│       ▼                                                                 │
+│  5. AGGREGATE:                                                         │
+│       │     • quality_score = sum(all tier totals)                     │
+│       │     • detection_risk = 100 - quality_score                     │
+│       ▼                                                                 │
+│  6. RECOMMEND: Generate improvement actions                            │
+│       │     • Sort by impact (HIGH > MEDIUM > LOW)                     │
+│       │     • Build ROI-optimized path to target                       │
+│       ▼                                                                 │
+│  7. RETURN: DualScore dataclass                                        │
+│                                                                         │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5. Exception Hierarchy
+
+```
+AIPatternAnalyzerError (base)
+├── DimensionNotFoundError
+│   └── Raised when dimension not in registry
+│       Attributes: dimension_name
+│
+├── DuplicateDimensionError
+│   └── Raised on duplicate registration attempt
+│       Attributes: dimension_name
+│
+├── InvalidTierError
+│   └── Raised when tier is not valid
+│       Attributes: tier, valid_tiers
+│
+├── InvalidWeightError
+│   └── Raised when weight outside 0-100
+│       Attributes: weight, valid_range
+│
+└── ParameterLoadError
+    └── Raised when parameter config cannot load
+        Attributes: config_path
+
+AnalysisError (base)
+├── EmptyFileError
+│   └── Raised when file has no analyzable content
+│
+└── InsufficientDataError
+    └── Raised when not enough data for analysis
+```
+
+---
+
+## 6. Data Models
+
+### 6.1 Core Data Models
 
 #### AnalysisResults
 
@@ -331,7 +496,7 @@ class ImprovementAction:
     effort_level: str  # 'LOW', 'MEDIUM', 'HIGH'
 ```
 
-### 4.2 Persistence Model
+### 6.2 Persistence Model
 
 **No database** - File-based JSON persistence:
 
@@ -343,9 +508,9 @@ class ImprovementAction:
 
 ---
 
-## 5. Source Code Organization
+## 7. Source Code Organization
 
-### 5.1 Project Structure
+### 7.1 Project Structure
 
 ```
 writescore/
@@ -371,7 +536,7 @@ writescore/
 └── README.md                # Project overview
 ```
 
-### 5.2 Naming Conventions
+### 7.2 Naming Conventions
 
 | Category | Convention | Example |
 |----------|------------|---------|
@@ -381,7 +546,7 @@ writescore/
 | Constants | `UPPER_SNAKE_CASE` | `AI_VOCAB_REPLACEMENTS` |
 | Tests | `test_*.py` | `test_perplexity.py` |
 
-### 5.3 Future Structure for MCP/API
+### 7.3 Future Structure for MCP/API
 
 ```
 src/writescore/
@@ -397,9 +562,9 @@ src/writescore/
 
 ---
 
-## 6. Infrastructure & Deployment
+## 8. Infrastructure & Deployment
 
-### 6.1 Deployment Model
+### 8.1 Deployment Model
 
 | Aspect | Current State |
 |--------|---------------|
@@ -408,7 +573,7 @@ src/writescore/
 | **Database** | None (file-based JSON) |
 | **Container Support** | None (could be added) |
 
-### 6.2 CI/CD Pipeline
+### 8.2 CI/CD Pipeline
 
 #### CI Workflow (`.github/workflows/ci.yml`)
 
@@ -423,7 +588,7 @@ src/writescore/
 |---------|-------|
 | Tag `v*` | Build → GitHub Release |
 
-### 6.3 Environment Requirements
+### 8.3 Environment Requirements
 
 | Component | Requirement |
 |-----------|-------------|
@@ -431,7 +596,7 @@ src/writescore/
 | spaCy model | `en_core_web_sm` (manual download) |
 | NLTK data | `punkt`, `punkt_tab` (auto-download) |
 
-### 6.4 Installation
+### 8.4 Installation
 
 ```bash
 # Development install
@@ -444,16 +609,16 @@ writescore analyze document.md
 
 ---
 
-## 7. Coding Standards
+## 9. Coding Standards
 
-### 7.1 Code Style
+### 9.1 Code Style
 
 **Enforced via ruff:**
 - Line length: 100 characters
 - Target: Python 3.9
 - Rules: E, F, W, I, UP, B, C4, SIM
 
-### 7.2 Documentation
+### 9.2 Documentation
 
 **Google-style docstrings:**
 ```python
@@ -469,7 +634,7 @@ def calculate_score(metrics: Dict[str, Any]) -> float:
     """
 ```
 
-### 7.3 Type Hints
+### 9.3 Type Hints
 
 Required for all public function signatures:
 ```python
@@ -482,9 +647,9 @@ def analyze(
 
 ---
 
-## 8. Testing Strategy
+## 10. Testing Strategy
 
-### 8.1 Test Organization
+### 10.1 Test Organization
 
 | Directory | Purpose | Marker |
 |-----------|---------|--------|
@@ -493,7 +658,7 @@ def analyze(
 | `tests/accuracy/` | Detection accuracy | `@pytest.mark.accuracy` |
 | `tests/performance/` | Benchmarks | `@pytest.mark.slow` |
 
-### 8.2 Test Patterns
+### 10.2 Test Patterns
 
 **Dimension Testing:**
 ```python
@@ -513,7 +678,7 @@ def clear_dimension_registry():
     DimensionRegistry.clear()
 ```
 
-### 8.3 Coverage Targets
+### 10.3 Coverage Targets
 
 | Metric | Target |
 |--------|--------|
@@ -522,9 +687,21 @@ def clear_dimension_registry():
 
 ---
 
-## 9. Architectural Recommendations
+## 11. Risk Assessment
 
-### 9.1 For MCP Server Evolution
+| Risk Type | Risk | Mitigation |
+|-----------|------|------------|
+| **Technical** | Transformer models (GLTR) are slow on large documents | ADAPTIVE/SAMPLING modes limit analysis scope |
+| **Technical** | spaCy/NLTK require model downloads on first run | Lazy loading with fallback handling |
+| **Technical** | Memory usage with large documents + ML models | Sampling modes reduce memory footprint |
+| **Dependency** | transformers/torch versions can conflict | Pinned minimum versions in pyproject.toml |
+| **Compatibility** | Python 3.9 approaching EOL (Oct 2025) | Already supports 3.10-3.12 |
+
+---
+
+## 12. Architectural Recommendations
+
+### 12.1 For MCP Server Evolution
 
 | Gap | Recommendation | Priority |
 |-----|----------------|----------|
@@ -533,7 +710,7 @@ def clear_dimension_registry():
 | No caching | Add result caching for repeated queries | Medium |
 | Tight CLI coupling | Decouple for API/MCP reuse | High |
 
-### 9.2 Proposed MCP Architecture
+### 12.2 Proposed MCP Architecture
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -557,7 +734,7 @@ def clear_dimension_registry():
 
 ---
 
-## 10. Appendix
+## 13. Appendix
 
 ### A. Quick Reference
 
@@ -602,7 +779,7 @@ writescore recalibrate dataset.jsonl
 
 ---
 
-## 11. Package Structure (Detailed)
+## 14. Package Structure (Detailed)
 
 This section provides a comprehensive view of the package structure with module descriptions.
 
@@ -646,9 +823,9 @@ writescore/
 
 ---
 
-## 12. Design Principles
+## 15. Design Principles
 
-### 12.1 Backward Compatibility
+### 15.1 Backward Compatibility
 
 The package maintains backward compatibility through package-level exports:
 
@@ -663,7 +840,7 @@ from writescore.core.analyzer import AIPatternAnalyzer
 from writescore import AIPatternAnalyzer
 ```
 
-### 12.2 Dimension Analyzer Interface
+### 15.2 Dimension Analyzer Interface
 
 All dimension analyzers implement the `DimensionAnalyzer` base class:
 
@@ -680,7 +857,7 @@ class DimensionAnalyzer(ABC):
         pass
 ```
 
-### 12.3 Separation of Concerns
+### 15.3 Separation of Concerns
 
 - **Core**: Orchestration and coordination
 - **Dimensions**: Individual analysis algorithms
