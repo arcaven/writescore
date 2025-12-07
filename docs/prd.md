@@ -31,7 +31,8 @@ WriteScore addresses this by providing writers with detailed analysis of their t
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
-| 2025-12-06 | 2.1 | Added Epic 6: Developer Experience & Security (7 stories) | PM Agent |
+| 2025-12-07 | 2.2 | Added Story 6.8: Mypy Type Compliance | PM Agent |
+| 2025-12-06 | 2.1 | Added Epic 6: Developer Experience & Security (Stories 6.1-6.7) | PM Agent |
 | 2025-12-02 | 2.0 | Restructured PRD to align with template; added full story AC | SM Agent |
 | 2025-11-26 | 1.0 | Reverse-engineered PRD from existing codebase v6.3.0 | PM Agent |
 
@@ -599,6 +600,22 @@ WriteScore is a self-contained command-line application with no external service
 3. `.github/ISSUE_TEMPLATE/feature_request.yml` created with structured form
 4. `.github/PULL_REQUEST_TEMPLATE.md` created with description, type, and checklist
 5. `CONTRIBUTING.md` updated to reference Justfile, devcontainer, and Code of Conduct
+
+---
+
+#### Story 6.8: Mypy Type Compliance
+
+**As a** contributor to WriteScore,
+**I want** the codebase to pass mypy type checking,
+**so that** type errors are caught early and the pre-commit hook doesn't block commits.
+
+**Acceptance Criteria:**
+1. All implicit Optional errors fixed (parameters with `= None` but no `Optional` type)
+2. All missing type annotations added to untyped variables
+3. All method override signature mismatches fixed in dimension subclasses
+4. Mypy passes with `--ignore-missing-imports` flag
+5. Pre-commit hook no longer requires `SKIP=mypy` to commit
+6. Mypy configuration added to `pyproject.toml`
 
 ---
 
