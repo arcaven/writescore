@@ -44,6 +44,7 @@ dev = [
     "ruff>=0.1.0",
     "pre-commit>=3.5.0",
     "sentence-transformers>=2.0.0",  # Required for figurative_language tests
+    "types-PyYAML>=6.0.0",  # Type stubs for PyYAML
 ]
 semantic = [
     "sentence-transformers>=2.0.0",
@@ -134,3 +135,13 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["writescore"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+# TODO(Story 6.8 Phase 2): Enable stricter checks as type coverage improves
+# disallow_untyped_defs = true
+# disallow_incomplete_defs = true
+# check_untyped_defs = true
